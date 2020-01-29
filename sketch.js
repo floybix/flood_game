@@ -1,8 +1,6 @@
 let end_sound
-let music
 let done_btn
 let bomb_btn
-let music_btn
 const nx = 11
 const ny = 11
 const pad = 30
@@ -33,7 +31,6 @@ let bwin = false
 let scale
 
 function preload() {
-  music = loadSound("theme_01.mp3")
   end_sound = loadSound("theygotcha.ogg")
 }
 
@@ -47,12 +44,9 @@ function setup() {
   colorMode(HSB, 100)
   done_btn = createButton('<h3>Turn done [Enter]</h3>');
   bomb_btn = createButton('<h3>Place bomb (3 moves)</h3>');
-  music_btn = createButton('<h3>Toggle music</h3>')
   done_btn.mousePressed(donePressed);
   bomb_btn.mousePressed(bombPressed);
-  music_btn.mousePressed(musicPressed);
   scale = (width - pad * 2) / nx
-  music.loop()
   restart()
 }
 
@@ -260,14 +254,6 @@ function donePressed() {
     turn = (turn == "A") ? "B" : "A"
     moves = []
     movesleft = nmoves
-  }
-}
-
-function musicPressed() {
-  if (music.isPlaying()) {
-    music.stop()
-  } else {
-    music.loop()
   }
 }
 
