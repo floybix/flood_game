@@ -6,15 +6,15 @@ let music_btn
 const nx = 11
 const ny = 11
 const pad = 30
-const a_source = [0, 0]
-const b_source = [10, 0]
-const a_targ = [10, 10]
-const b_targ = [0, 10]
 const nmoves = 4
 const nmoves_start = 2
 const protect_back = 2
 const colour_a = "darkorchid"
 const colour_b = "darkturquoise"
+
+// vectors (created in setup function)
+let a_source, b_source, a_targ, b_targ
+let padv
 
 const MODE_MOVE = 0
 const MODE_BOMB = 1
@@ -30,8 +30,7 @@ let moves = []
 let past_moves = []
 let awin = false
 let bwin = false
-let scalex
-let scaley
+let scale
 
 function preload() {
   music = loadSound("theme_01.mp3")
@@ -39,7 +38,11 @@ function preload() {
 }
 
 function setup() {
-  music.loop()
+  a_source = createVector(0, 0)
+  b_source = createVector(nx-1, 0)
+  a_targ = createVector(nx-1, ny-1)
+  b_targ = createVector(0, ny-1)
+  padv = createVector(pad, pad)
   createCanvas(400, 400);
   colorMode(HSB, 100)
   done_btn = createButton('<h3>Turn done [Enter]</h3>');
@@ -48,27 +51,26 @@ function setup() {
   done_btn.mousePressed(donePressed);
   bomb_btn.mousePressed(bombPressed);
   music_btn.mousePressed(musicPressed);
-  scalex = (width - pad * 2) / nx
-  scaley = (height - pad * 2) / ny
+  scale = (width - pad * 2) / nx
+  music.loop()
   restart()
 }
 
 function emptyGrid(val) {
   let a = []
   for (let xi = 0; xi < nx; xi++) {
-    axi = []
+    a[xi] = []
     for (let yi = 0; yi < ny; yi++) {
-      axi[yi] = val
+      a[xi][yi] = val
     }
-    a[xi] = axi
   }
   return (a)
 }
 
 function restart() {
   filled = emptyGrid(true)
-  for (const [x,y] of [a_source, b_source, a_targ, b_targ]) {
-    filled[x][y] = false
+  for (const v of [a_source, b_source, a_targ, b_targ]) {
+    filled[v.x][v.y] = false
   }
   turn = "A"
   movesleft = nmoves_start
@@ -78,11 +80,11 @@ function restart() {
   past_moves = []
 }
 
-function moveid([ix, iy]) {
-  return(ix + "," + iy)
+function moveid(v) {
+  return (v.x + "," + v.y)
 }
 
-function is_protected(ix, iy) {
+function is_protected(v) {
   let a = [moveid(a_source),
            moveid(b_source),
            moveid(a_targ),
@@ -94,46 +96,50 @@ function is_protected(ix, iy) {
       }
     }
   }
-  let p = new Set(a)
-  return(p.has(moveid([ix,iy])))
+  return (a.includes(moveid(v)))
+}
+
+function toPx(v) {
+  let px = p5.Vector.mult(v, scale)
+  px.add(padv)
+  return px
 }
 
 function drawGrid(g) {
   for (let ix = 0; ix < nx; ix++) {
     for (let iy = 0; iy < ny; iy++) {
-      let x = pad + ix * scalex
-      let y = pad + iy * scaley
+      let x = pad + ix * scale
+      let y = pad + iy * scale
       if (g[ix][iy]) {
-        rect(x, y, scalex, scaley)
+        rect(x, y, scale, scale)
       }
     }
   }
 }
 
-function drawProtectedCell(label, ix, iy) {
-  let x = pad + ix * scalex
-  let y = pad + iy * scaley
+function drawProtectedCell(label, v) {
+  let px = toPx(v)
   strokeWeight(4)
-  rect(x, y, scalex, scaley)
+  rect(px.x, px.y, scale, scale)
   textAlign(CENTER, CENTER)
   textSize(20)
   fill("black")
   noStroke()
-  text(label, x + scalex/2, y + scaley/2)
+  text(label, px.x + scale / 2, px.y + scale / 2)
 }
 
 function draw() {
   background(100)
   if (mode == MODE_END) {
     for (let i = 0; i < height; i++) {
-      stroke(sin((i + frameCount)/100) * 50 + 50)
-      line(0,i,width,i)
+      stroke(sin((i + frameCount) / 100) * 50 + 50)
+      line(0, i, width, i)
     }
   }
   // draw board
   fill("white")
   noStroke()
-  rect(pad,pad,width-2*pad,height-2*pad)
+  rect(pad, pad, width - 2 * pad, height - 2 * pad)
   fill("peru")
   stroke("sienna")
   strokeWeight(2)
@@ -143,13 +149,12 @@ function draw() {
   textSize(20)
   if (mode == MODE_MOVE || mode == MODE_BOMB) {
     // highlight current moves
-    for (const [ix, iy] of moves) {
-      let x = pad + ix * scalex
-      let y = pad + iy * scaley
+    for (const v of moves) {
+      let px = toPx(v)
       noFill()
       stroke(color(100, 0, 0, 100))
       strokeWeight(4)
-      rect(x, y, scalex, scaley)
+      rect(px.x, px.y, scale, scale)
       strokeWeight(1)
     }
     fill("black")
@@ -176,24 +181,24 @@ function draw() {
   // draw sources
   fill(colour_a)
   stroke("black")
-  drawProtectedCell("A", a_source[0], a_source[1])
+  drawProtectedCell("A", a_source)
   fill(colour_b)
   stroke("black")
-  drawProtectedCell("B", b_source[0], b_source[1])
+  drawProtectedCell("B", b_source)
   // draw targets
   fill(colour_a)
   stroke("black")
-  drawProtectedCell("🎯", a_targ[0], a_targ[1])
+  drawProtectedCell("🎯", a_targ)
   fill(colour_b)
   stroke("black")
-  drawProtectedCell("🎯", b_targ[0], a_targ[1])
+  drawProtectedCell("🎯", b_targ)
   // draw protected moves
   for (let i = 0; i < protect_back; i++) {
     if (past_moves.length > i) {
-      for (let [ix, iy] of past_moves[i]) {
+      for (let v of past_moves[i]) {
         stroke("black")
         noFill()
-        drawProtectedCell(protect_back-i,ix,iy)
+        drawProtectedCell(protect_back - i, v)
       }
     }
   }
@@ -208,19 +213,27 @@ function mousePressed() {
   }
 }
 
-function mousePressed_move() {
+function clickedCell() {
   if (mouseX < pad) return false;
   if (mouseY < pad) return false;
   if (mouseX > width - pad) return false;
   if (mouseY > height - pad) return false;
-  let ix = floor((mouseX - pad) / scalex)
-  let iy = floor((mouseY - pad) / scaley)
-  if (is_protected(ix, iy) == false) {
-    let flip = moves.map(moveid).includes(moveid([ix,iy]))
+  let ix = floor((mouseX - pad) / scale)
+  let iy = floor((mouseY - pad) / scale)
+  return createVector(ix, iy)
+}
+
+function mousePressed_move() {
+  let v = clickedCell()
+  if (!v) return
+  let ix = v.x
+  let iy = v.y
+  if (is_protected(v) == false) {
+    let flip = moves.map(moveid).includes(moveid(v))
     if (flip || (movesleft > 0)) {
       filled[ix][iy] = !filled[ix][iy]
       if (!flip) {
-        moves.push([ix, iy])
+        moves.push(v)
         movesleft = movesleft - 1
       }
     }
@@ -228,14 +241,6 @@ function mousePressed_move() {
 }
 
 function mousePressed_bomb() {
-  if (mouseX < pad) return false;
-  if (mouseY < pad) return false;
-  if (mouseX > width - pad) return false;
-  if (mouseY > height - pad) return false;
-  let ix = floor((mouseX - pad) / scalex)
-  let iy = floor((mouseY - pad) / scaley)
-  bombs[ix][iy] = protect_back
-  moves.push([ix, iy])
   // TODO
 }
 
@@ -281,7 +286,8 @@ function bombPressed() {
 }
 
 function checkWin(source, targ) {
-  let [sx,sy] = source
+  let sx = source.x
+  let sy = source.y
   let path = DFS(sx, sy, emptyGrid(false), targ)
   if (path) {
     path[sx][sy] = true
@@ -301,7 +307,7 @@ function DFS(x, y, visited, targ) {
   if (filled[x][y] == true)
     return (false)
   visited[x][y] = true
-  if (moveid([x,y]) == moveid(targ))
+  if (moveid(createVector(x, y)) == moveid(targ))
     return (visited)
   let ans =
     DFS(x + 1, y + 1, visited, targ) ||
