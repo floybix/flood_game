@@ -1,6 +1,5 @@
 let end_sound
 let done_btn
-let bomb_btn
 const nx = 11
 const ny = 11
 const pad = 30
@@ -15,7 +14,6 @@ let a_source, b_source, a_targ, b_targ
 let padv
 
 const MODE_MOVE = 0
-const MODE_BOMB = 1
 const MODE_END = 2
 
 let mode = MODE_MOVE
@@ -43,9 +41,7 @@ function setup() {
   createCanvas(400, 400);
   colorMode(HSB, 100)
   done_btn = createButton('<h3>Turn done [Enter]</h3>');
-  bomb_btn = createButton('<h3>Place bomb (3 moves)</h3>');
   done_btn.mousePressed(donePressed);
-  bomb_btn.mousePressed(bombPressed);
   scale = (width - pad * 2) / nx
   restart()
 }
@@ -141,7 +137,7 @@ function draw() {
   noStroke()
   fill("black")
   textSize(20)
-  if (mode == MODE_MOVE || mode == MODE_BOMB) {
+  if (mode == MODE_MOVE) {
     // highlight current moves
     for (const v of moves) {
       let px = toPx(v)
@@ -202,9 +198,6 @@ function mousePressed() {
   if (mode == MODE_MOVE) {
     mousePressed_move()
   }
-  if (mode == MODE_BOMB) {
-    mousePressed_bomb()
-  }
 }
 
 function clickedCell() {
@@ -234,10 +227,6 @@ function mousePressed_move() {
   }
 }
 
-function mousePressed_bomb() {
-  // TODO
-}
-
 function donePressed() {
   awin = checkWin(a_source, a_targ)
   bwin = checkWin(b_source, b_targ)
@@ -260,14 +249,6 @@ function donePressed() {
 function keyPressed() {
   if (keyCode == ENTER) {
     donePressed()
-  }
-}
-
-function bombPressed() {
-  if (mode == MODE_MOVE) {
-    mode = MODE_BOMB
-  } else if (mode == MODE_BOMB) {
-    mode = MODE_MOVE
   }
 }
 
